@@ -1,9 +1,12 @@
 package com.example.demo.security;
 
+import com.example.demo.auth.ApplicationUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -28,10 +31,14 @@ import static com.example.demo.security.ApplicationUserRole.*;
 public class ApplicationSecurity extends WebSecurityConfigurerAdapter {
 
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationUserService applicationUserService;
+
 
     @Autowired
-    public ApplicationSecurity(PasswordEncoder passwordEncoder) {
+    public ApplicationSecurity(PasswordEncoder passwordEncoder,
+                               ApplicationUserService applicationUserService) {
         this.passwordEncoder = passwordEncoder;
+        this.applicationUserService=applicationUserService;
     }
 
     @Override
@@ -76,35 +83,17 @@ public class ApplicationSecurity extends WebSecurityConfigurerAdapter {
 
     }
 
-    @Bean
-    protected UserDetailsService userDetailsService() {
-
-        var jasimUser =User
-                .builder()
-                .username("jasim")
-                .password(passwordEncoder.encode( "password"))
-                //.roles(STUDENT.name())
-                .authorities(STUDENT.getGrantedAuthorities())
-                .build();
-
-        var abdulla =User
-                .builder()
-                .username("abdulla")
-                .password(passwordEncoder.encode( "password123"))
-                .authorities(ADMIN.getGrantedAuthorities())
-                //.roles(ADMIN.name())
-                .build();
-
-        var tom =User
-                .builder()
-                .username("tom")
-                .password(passwordEncoder.encode( "password123"))
-                .authorities(ADMINTRAINEE.getGrantedAuthorities())
-                //.roles(ADMINTRAINEE.name())
-                .build();
-
-        return new InMemoryUserDetailsManager(
-               jasimUser,abdulla, tom
-        );
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
     }
+
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
+        var provider=new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(applicationUserService);
+        return provider;
+    }
+
 }
