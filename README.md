@@ -1,3 +1,3 @@
 # spring_security
 
-Spring Security (database_authentication)
+Spring Security (jwt_authentication)
